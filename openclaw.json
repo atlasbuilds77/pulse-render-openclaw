@@ -49,6 +49,7 @@
       "dmPolicy": "open",
       "replyToMode": "first",
       "streaming": "off",
+      "allowFrom": ["*"],
       "guilds": {
         "*": {
           "requireMention": true,
