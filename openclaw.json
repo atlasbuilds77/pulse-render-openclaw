@@ -48,7 +48,6 @@
       "groupPolicy": "open",
       "dmPolicy": "open",
       "replyToMode": "first",
-      "streaming": "off",
       "allowFrom": ["*"],
       "guilds": {
         "*": {
