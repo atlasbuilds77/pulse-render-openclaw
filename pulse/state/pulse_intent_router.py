@@ -118,7 +118,13 @@ def route_message(text: str) -> Dict[str, Any]:
         reply = ((payload.get('discord_summary') or {}).get('text') if isinstance(payload, dict) else None)
     elif intent == 'levels':
         levels = payload.get('key_levels') or payload.get('levels') or {}
-        reply = f"{symbol} levels — PDH {levels.get('prior_day_high')}, PDL {levels.get('prior_day_low')}, VWAP {levels.get('vwap')}, OR high {levels.get('opening_range_high')}, OR low {levels.get('opening_range_low')}."
+        prev = levels.get('previous_day') or {}
+        session = levels.get('session') or {}
+        reply = (
+            f"{symbol} levels — PDH {prev.get('high')}, PDL {prev.get('low')}, "
+            f"VWAP {session.get('vwap')}, OR high {session.get('opening_range_30m_high')}, "
+            f"OR low {session.get('opening_range_30m_low')}."
+        )
     elif intent == 'news':
         items = payload.get('news') or []
         first = items[0] if items else {}
