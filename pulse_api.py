@@ -10,7 +10,8 @@ import json, os, subprocess, sys, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path('/app/pulse/state')
+ROOT = Path(os.getenv('PULSE_STATE_DIR', '/app/pulse/state'))
+DATA_DIR = Path(os.getenv('PULSE_DATA_DIR', os.getenv('OPENCLAW_STATE_DIR', '/data'))) / 'pulse'
 TITAN_URL = os.getenv('TITAN_URL', 'https://titan-gex.orionsolana.repl.co').rstrip('/')
 TITAN_API_KEY = os.getenv('TITAN_API_KEY', '').strip()
 
@@ -98,7 +99,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    os.makedirs('/data/pulse', exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     host = os.getenv('PULSE_API_HOST', '127.0.0.1')
     port = int(os.getenv('PULSE_API_PORT', '8787'))
     print(f'[pulse-api] listening on {host}:{port}', flush=True)
