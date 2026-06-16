@@ -1,0 +1,60 @@
+{
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "auth": {
+      "token": { "source": "env", "provider": "default", "id": "OPENCLAW_GATEWAY_TOKEN" }
+    }
+  },
+  "tools": {
+    "profile": "minimal",
+    "allow": ["web_fetch", "web_search", "x_search", "session_status"],
+    "deny": ["exec", "process", "read", "write", "edit", "apply_patch", "browser", "canvas", "sessions_spawn", "subagents", "message"]
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai/gpt-5.4",
+        "fallbacks": ["openai/gpt-5.3-chat-latest"]
+      }
+    },
+    "list": [
+      {
+        "id": "pulse",
+        "name": "Pulse",
+        "workspace": "/app/workspace",
+        "model": {
+          "primary": "openai/gpt-5.4",
+          "fallbacks": ["openai/gpt-5.3-chat-latest"]
+        },
+        "tools": {
+          "profile": "minimal",
+          "allow": ["web_fetch", "web_search", "x_search", "session_status"],
+          "deny": ["exec", "process", "read", "write", "edit", "apply_patch", "browser", "canvas", "sessions_spawn", "subagents", "message"]
+        },
+        "groupChat": {
+          "mentionPatterns": ["pulse", "@pulse"]
+        }
+      }
+    ]
+  },
+  "bindings": [
+    { "match": { "channel": "discord" }, "agentId": "pulse" }
+  ],
+  "channels": {
+    "discord": {
+      "enabled": true,
+      "token": { "source": "env", "provider": "default", "id": "DISCORD_BOT_TOKEN" },
+      "groupPolicy": "allowlist",
+      "dmPolicy": "allowlist",
+      "replyToMode": "reply",
+      "streaming": "off",
+      "guilds": {
+        "*": {
+          "requireMention": true,
+          "ignoreOtherMentions": true
+        }
+      }
+    }
+  }
+}
