@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
-DEFAULT_DIR = Path('/app/pulse/state/chart_vision')
+DEFAULT_DIR = Path(__import__('os').getenv('PULSE_VISION_DIR', '/data/pulse/chart_vision'))
 
 
 def build_job(symbol: str, asset_type: str) -> Dict[str, object]:

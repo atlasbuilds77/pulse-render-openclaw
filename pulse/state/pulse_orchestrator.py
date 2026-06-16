@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-ROOT = Path('/app/pulse/state')
+ROOT = Path(__import__('os').getenv('PULSE_STATE_DIR', '/app/pulse/state'))
 TRADER_BRAIN = ROOT / 'trader_brain.py'
 CHART_VISION = ROOT / 'chart_vision.py'
 X_CONTEXT = ROOT / 'pulse_x_context.py'

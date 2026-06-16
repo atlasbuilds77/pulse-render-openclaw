@@ -41,8 +41,8 @@ except Exception:
 POLYGON_BASE = "https://api.polygon.io"
 COINBASE_BASE = "https://api.exchange.coinbase.com"
 DEFAULT_CREDENTIALS_PATH = "/data/credentials.json"
-DEFAULT_JOURNAL_PATH = "/app/pulse/state/analysis_journal.jsonl"
-DEFAULT_VISION_DIR = "/app/pulse/state/chart_vision"
+DEFAULT_JOURNAL_PATH = os.getenv("PULSE_JOURNAL_PATH", "/data/pulse/analysis_journal.jsonl")
+DEFAULT_VISION_DIR = os.getenv("PULSE_VISION_DIR", "/data/pulse/chart_vision")
 NYSE_TZ = ZoneInfo("America/New_York") if ZoneInfo else None
 INDEX_MAP = {
     "SPX": "I:SPX",
