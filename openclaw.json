@@ -45,9 +45,9 @@
     "discord": {
       "enabled": true,
       "token": { "source": "env", "provider": "default", "id": "DISCORD_BOT_TOKEN" },
-      "groupPolicy": "allowlist",
-      "dmPolicy": "allowlist",
-      "replyToMode": "reply",
+      "groupPolicy": "open",
+      "dmPolicy": "open",
+      "replyToMode": "first",
       "streaming": "off",
       "guilds": {
         "*": {
