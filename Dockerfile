@@ -7,6 +7,7 @@ COPY pulse /app/pulse
 COPY workspace /app/workspace
 COPY openclaw.json /app/openclaw.json
 COPY start.sh /app/start.sh
+RUN OPENCLAW_CONFIG_PATH=/app/openclaw.json OPENCLAW_STATE_DIR=/tmp/openclaw-build OPENCLAW_GATEWAY_TOKEN=build-token openclaw doctor --fix || true
 RUN chmod +x /app/start.sh && mkdir -p /data && chown -R node:node /data /app/pulse /app/workspace /app/openclaw.json /app/start.sh /app/pulse_api.py
 USER node
 ENV NODE_ENV=production OPENCLAW_STATE_DIR=/data OPENCLAW_CONFIG_PATH=/app/openclaw.json OPENCLAW_DISABLE_BONJOUR=1
