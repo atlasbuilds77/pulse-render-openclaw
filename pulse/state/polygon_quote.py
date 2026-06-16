@@ -133,26 +133,22 @@ def main() -> int:
     last_trade = {}
     prev_day = {}
 
+    last_trade_error = None
     try:
         last_trade = _fetch(f"/v2/last/trade/{symbol}", api_key)
     except urllib.error.HTTPError as exc:
-        print(
-            json.dumps(
-                {
-                    "error": f"Polygon HTTP error: {exc.code}",
-                    "requested": requested,
-                    "symbol": symbol,
-                }
-            )
-        )
-        return 1
+        # Some Polygon plans do not include live last-trade entitlement. Keep going;
+        # previous aggregate close is still enough for Pulse to answer safely.
+        last_trade_error = f"Polygon last-trade HTTP error: {exc.code}"
     except Exception as exc:
-        print(json.dumps({"error": f"Polygon request failed: {exc}", "requested": requested, "symbol": symbol}))
-        return 1
+        last_trade_error = f"Polygon last-trade request failed: {exc}"
 
     try:
         prev_day = _fetch(f"/v2/aggs/ticker/{symbol}/prev", api_key, {"adjusted": "true"})
-    except Exception:
+    except Exception as exc:
+        if last_trade_error:
+            print(json.dumps({"error": last_trade_error, "fallback_error": f"Polygon prev close failed: {exc}", "requested": requested, "symbol": symbol}))
+            return 1
         prev_day = {}
 
     trade_result = (last_trade or {}).get("results") or {}
@@ -177,6 +173,10 @@ def main() -> int:
         as_of_ms=as_of_ms,
         prev_close=prev_close,
     )
+
+    if last_trade_error and source == "polygon_prev_close":
+        payload["note"] = last_trade_error
+        payload["delayed"] = True
 
     if payload["price"] is None:
         payload["error"] = "No price returned by Polygon."
