@@ -35,8 +35,9 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai-codex/gpt-5.5",
+        "primary": "deepseek/deepseek-v4-flash",
         "fallbacks": [
+          "openai-codex/gpt-5.5",
           "openai-codex/gpt-5.4"
         ]
       }
@@ -47,8 +48,9 @@
         "name": "Pulse",
         "workspace": "/app/workspace",
         "model": {
-          "primary": "openai-codex/gpt-5.5",
+          "primary": "deepseek/deepseek-v4-flash",
           "fallbacks": [
+            "openai-codex/gpt-5.5",
             "openai-codex/gpt-5.4"
           ]
         },
