@@ -875,7 +875,12 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
     api_key = _load_polygon_api_key()
     now_utc = _utc_now()
 
-    last_trade = _polygon_fetch(f"/v2/last/trade/{symbol}", api_key)
+    degraded_notes: List[str] = []
+    try:
+        last_trade = _polygon_fetch(f"/v2/last/trade/{symbol}", api_key)
+    except Exception as exc:
+        last_trade = {"status": "UNAVAILABLE", "results": {}}
+        degraded_notes.append(f"last trade unavailable ({type(exc).__name__})")
     prev_day = _polygon_fetch(f"/v2/aggs/ticker/{symbol}/prev", api_key, {"adjusted": "true"})
 
     start_intraday = (now_utc - dt.timedelta(days=3)).date().isoformat()
@@ -893,17 +898,25 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
         {"adjusted": "true", "sort": "asc", "limit": "5000"},
     )
 
-    recent_trades = _polygon_fetch(
-        f"/v3/trades/{symbol}",
-        api_key,
-        {"order": "desc", "sort": "timestamp", "limit": "200"},
-    )
+    try:
+        recent_trades = _polygon_fetch(
+            f"/v3/trades/{symbol}",
+            api_key,
+            {"order": "desc", "sort": "timestamp", "limit": "200"},
+        )
+    except Exception as exc:
+        recent_trades = {"status": "UNAVAILABLE", "results": []}
+        degraded_notes.append(f"recent tape unavailable ({type(exc).__name__})")
 
-    news = _polygon_fetch(
-        "/v2/reference/news",
-        api_key,
-        {"ticker": symbol, "limit": str(max(1, min(20, news_limit))), "order": "desc", "sort": "published_utc"},
-    )
+    try:
+        news = _polygon_fetch(
+            "/v2/reference/news",
+            api_key,
+            {"ticker": symbol, "limit": str(max(1, min(20, news_limit))), "order": "desc", "sort": "published_utc"},
+        )
+    except Exception as exc:
+        news = {"status": "UNAVAILABLE", "results": []}
+        degraded_notes.append(f"news unavailable ({type(exc).__name__})")
 
     trade_result = (last_trade.get("results") or {}) if isinstance(last_trade, dict) else {}
     prev_results = (prev_day.get("results") or []) if isinstance(prev_day, dict) else []
@@ -1067,6 +1080,7 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
         "asset_type": "equity",
         "source": "polygon",
         "generated_at_utc": now_utc.isoformat(),
+        "degraded_notes": degraded_notes,
         "price": {
             "last": price,
             "as_of_ms": price_ts_ms,
@@ -1178,7 +1192,7 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
     })
 
     if mode == "levels":
-        return {"requested": symbol, "mode": mode, "price": payload["price"], "key_levels": payload["key_levels"]}
+        return {"requested": symbol, "mode": mode, "price": payload["price"], "key_levels": payload["key_levels"], "degraded_notes": degraded_notes}
     if mode == "bias":
         return {
             "requested": symbol,
@@ -1189,6 +1203,7 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
             "score": setup_score,
             "options_positioning": options_positioning,
             "discord_summary": payload["discord_summary"],
+            "degraded_notes": degraded_notes,
         }
     if mode == "news":
         return {"requested": symbol, "mode": mode, "news": news_summary, "x_signals": x_context}
@@ -1206,6 +1221,7 @@ def build_equity_snapshot(symbol: str, mode: str, news_limit: int) -> Dict[str, 
             "setup": payload["setup"],
             "score": setup_score,
             "verdict": payload["verdict"],
+            "degraded_notes": degraded_notes,
         }
     return payload
 
