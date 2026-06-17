@@ -104,6 +104,10 @@
           "requireMention": true,
           "ignoreOtherMentions": true
         }
+      },
+      "commands": {
+        "native": "auto",
+        "nativeSkills": "auto"
       }
     }
   },
@@ -115,6 +119,20 @@
       "discord": {
         "enabled": true
       }
+    }
+  },
+  "commands": {
+    "ownerAllowFrom": [
+      "discord:326085846216343552",
+      "user:326085846216343552",
+      "326085846216343552"
+    ],
+    "allowFrom": {
+      "discord": [
+        "user:326085846216343552",
+        "discord:326085846216343552",
+        "326085846216343552"
+      ]
     }
   }
 }
