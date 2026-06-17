@@ -119,7 +119,21 @@
       "discord": {
         "enabled": true
       }
-    }
+    },
+    "allow": [
+      "deepseek",
+      "discord"
+    ],
+    "deny": [
+      "browser",
+      "canvas",
+      "device-pair",
+      "file-transfer",
+      "memory-core",
+      "phone-control",
+      "talk-voice",
+      "voice-call"
+    ]
   },
   "commands": {
     "ownerAllowFrom": [
