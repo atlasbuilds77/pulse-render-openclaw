@@ -14,7 +14,6 @@
     "allow": [
       "web_fetch",
       "web_search",
-      "x_search",
       "session_status"
     ],
     "deny": [
@@ -35,10 +34,7 @@
     "defaults": {
       "model": {
         "primary": "deepseek/deepseek-v4-flash",
-        "fallbacks": [
-          "openai-codex/gpt-5.5",
-          "openai-codex/gpt-5.4"
-        ]
+        "fallbacks": []
       },
       "thinkingDefault": "off"
     },
@@ -49,16 +45,12 @@
         "workspace": "/app/workspace",
         "model": {
           "primary": "deepseek/deepseek-v4-flash",
-          "fallbacks": [
-            "openai-codex/gpt-5.5",
-            "openai-codex/gpt-5.4"
-          ]
+          "fallbacks": []
         },
         "tools": {
           "allow": [
             "web_fetch",
             "web_search",
-            "x_search",
             "session_status"
           ],
           "deny": [
