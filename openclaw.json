@@ -106,5 +106,15 @@
         }
       }
     }
+  },
+  "plugins": {
+    "entries": {
+      "deepseek": {
+        "enabled": true
+      },
+      "discord": {
+        "enabled": true
+      }
+    }
   }
 }
