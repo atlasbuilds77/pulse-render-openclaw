@@ -5,10 +5,12 @@ export OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/data}"
 export OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-/app/openclaw.json}"
 export OPENCLAW_GATEWAY_PORT="${PORT:-3000}"
 
-# Render secrets only exist at runtime, and the live state dir is /data.
-# Rebuild the plugin registry here so the Discord channel plugin is active for the gateway.
-echo "[start] repairing OpenClaw runtime/plugin state in ${OPENCLAW_STATE_DIR}"
-openclaw doctor --fix || echo "[start] warning: openclaw doctor --fix reported issues; continuing gateway boot"
+# Seed the live persistent state dir from Docker build output.
+# This keeps Discord plugin deps/registry available without running heavy installs at boot.
+if [ -d /app/openclaw-state-seed ]; then
+  echo "[start] seeding OpenClaw plugin state into ${OPENCLAW_STATE_DIR}"
+  cp -a /app/openclaw-state-seed/. "${OPENCLAW_STATE_DIR}/"
+fi
 
 python3 /app/pulse_api.py &
 API_PID=$!
