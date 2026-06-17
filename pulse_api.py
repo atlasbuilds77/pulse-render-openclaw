@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(os.getenv('PULSE_STATE_DIR', '/app/pulse/state'))
 DATA_DIR = Path(os.getenv('PULSE_DATA_DIR', os.getenv('OPENCLAW_STATE_DIR', '/data'))) / 'pulse'
-TITAN_URL = os.getenv('TITAN_URL', 'https://titan-gex.orionsolana.repl.co').rstrip('/')
+TITAN_URL = os.getenv('TITAN_URL', 'https://titangex.com').rstrip('/')
 TITAN_API_KEY = os.getenv('TITAN_API_KEY', '').strip()
 
 
@@ -31,28 +31,64 @@ def run_json(args: list[str], timeout: int = 240):
 
 
 def titan_get(symbol: str):
-    # Try likely Titan endpoints in order; return first JSON response.
+    """Fetch Orion's TitanGEX levels.
+
+    Current production API lives at titangex.com and exposes
+    /api/v1/gamma/:ticker with bearer auth. Keep a couple legacy fallbacks so
+    old deployments/envs do not hard-fail if TITAN_URL points elsewhere.
+    """
     safe = urllib.parse.quote(symbol.upper().strip(), safe='')
-    paths = [f'/api/gamma/{safe}', f'/api/levels/{safe}', f'/api/titan/{safe}', f'/api/analyze/{safe}', f'/gamma/{safe}', f'/levels/{safe}']
+    base = TITAN_URL.rstrip('/')
+    paths = [
+        f'/api/v1/gamma/{safe}',
+        f'/api/gamma/{safe}',
+        f'/v1/map?ticker={safe}',
+    ]
     headers = {'User-Agent': 'pulse-render-openclaw/1.0'}
     if TITAN_API_KEY:
         headers['Authorization'] = f'Bearer {TITAN_API_KEY}'
         headers['x-api-key'] = TITAN_API_KEY
     errors = []
     for path in paths:
-        url = TITAN_URL + path
+        url = base + path
         try:
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=20) as resp:
                 body = resp.read().decode('utf-8')
             try:
                 data = json.loads(body)
             except Exception:
                 data = {'raw': body[:4000]}
-            return {'ok': True, 'source': 'titan', 'url_path': path, 'symbol': symbol.upper(), 'data': data}
+            return {
+                'ok': True,
+                'source': 'titangex',
+                'url_path': path.split('?', 1)[0],
+                'symbol': symbol.upper(),
+                'data': normalize_titan_payload(data),
+                'raw': data,
+            }
         except Exception as exc:
             errors.append(f'{path}: {type(exc).__name__}: {exc}')
-    return {'ok': False, 'source': 'titan', 'symbol': symbol.upper(), 'error': 'No Titan endpoint responded', 'attempts': errors[-3:]}
+    return {'ok': False, 'source': 'titangex', 'symbol': symbol.upper(), 'error': 'No TitanGEX endpoint responded', 'attempts': errors[-3:]}
+
+
+def normalize_titan_payload(data):
+    if not isinstance(data, dict):
+        return data
+    return {
+        'ticker': data.get('ticker') or data.get('symbol'),
+        'spot': data.get('spotPrice') or data.get('spot'),
+        'call_wall': data.get('callWall') or data.get('call_wall'),
+        'put_wall': data.get('putWall') or data.get('put_wall'),
+        'zero_gex': data.get('zeroGEX') or data.get('zero_gex') or data.get('gammaFlip'),
+        'hvl': data.get('hvl'),
+        'net_gex': data.get('netGEX') or data.get('net_gex') or data.get('totalGamma'),
+        'net_call_gex': data.get('netCallGEX'),
+        'net_put_gex': data.get('netPutGEX'),
+        'king_nodes': data.get('kingNodes') or data.get('king_nodes'),
+        'data_source': data.get('dataSource'),
+        'timestamp': data.get('timestamp'),
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
