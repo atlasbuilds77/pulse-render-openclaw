@@ -14,6 +14,7 @@ ROOT = Path(os.getenv('PULSE_STATE_DIR', '/app/pulse/state'))
 DATA_DIR = Path(os.getenv('PULSE_DATA_DIR', os.getenv('OPENCLAW_STATE_DIR', '/data'))) / 'pulse'
 TITAN_URL = os.getenv('TITAN_URL', 'https://titangex.com').rstrip('/')
 TITAN_API_KEY = os.getenv('TITAN_API_KEY', '').strip()
+SPORTSDB_BASE = 'https://www.thesportsdb.com/api/v1/json/3'
 
 
 def run_json(args: list[str], timeout: int = 240):
@@ -91,6 +92,38 @@ def normalize_titan_payload(data):
     }
 
 
+def sportsdb_get(endpoint: str, params: dict[str, str]):
+    """Fetch free/no-key sports metadata from TheSportsDB.
+
+    This is intentionally allowlisted instead of a generic proxy.
+    It is for schedules/team lookup enrichment, not betting odds.
+    """
+    allowed = {
+        'team': ('searchteams.php', {'t'}),
+        'next': ('eventsnext.php', {'id'}),
+        'last': ('eventslast.php', {'id'}),
+        'leagues': ('search_all_leagues.php', {'c', 's'}),
+        'league_events': ('eventsseason.php', {'id', 's'}),
+        'event': ('lookupevent.php', {'id'}),
+    }
+    if endpoint not in allowed:
+        return {'ok': False, 'error': 'unsupported sportsdb endpoint', 'allowed': sorted(allowed)}
+    script, keys = allowed[endpoint]
+    clean = {k: v for k, v in params.items() if k in keys and v}
+    if not clean:
+        return {'ok': False, 'error': f'missing params; expected one of {sorted(keys)}'}
+    query = urllib.parse.urlencode(clean)
+    url = f'{SPORTSDB_BASE}/{script}?{query}'
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'pulse-render-openclaw/1.0'})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            body = resp.read().decode('utf-8')
+        data = json.loads(body)
+        return {'ok': True, 'source': 'thesportsdb', 'endpoint': endpoint, 'data': data}
+    except Exception as exc:
+        return {'ok': False, 'source': 'thesportsdb', 'endpoint': endpoint, 'error': f'{type(exc).__name__}: {exc}'}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print('[pulse-api]', fmt % args, flush=True)
@@ -129,7 +162,11 @@ class Handler(BaseHTTPRequestHandler):
                 symbol = (qs.get('symbol') or [''])[0]
                 if not symbol: return self.send_json({'ok': False, 'error': 'symbol required'}, 400)
                 return self.send_json(titan_get(symbol))
-            return self.send_json({'ok': False, 'error': 'not found', 'paths': ['/healthz','/quote?symbol=SPY','/brain?symbol=SPY&mode=pulse','/route?message=SPY%20levels','/titan?symbol=SPY']}, 404)
+            if path == '/sportsdb':
+                endpoint = (qs.get('endpoint') or [''])[0]
+                params = {k: v[0] for k, v in qs.items() if v}
+                return self.send_json(sportsdb_get(endpoint, params))
+            return self.send_json({'ok': False, 'error': 'not found', 'paths': ['/healthz','/quote?symbol=SPY','/brain?symbol=SPY&mode=pulse','/route?message=SPY%20levels','/titan?symbol=SPY','/sportsdb?endpoint=team&t=Los%20Angeles%20Lakers']}, 404)
         except Exception as exc:
             return self.send_json({'ok': False, 'error': str(exc)}, 500)
 
